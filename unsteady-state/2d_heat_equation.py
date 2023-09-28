@@ -11,20 +11,20 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Data
-init_temp = 10
+init_temp = 200
 W = 2  # plate's width
 H = 2  # plate's height
 k = 10  # plate's thermal conductivity
 rho = 10  # plate's density
-c = 1e6  # plate's specific heat capacity
+c = 1e3  # plate's specific heat capacity
 
 
-TIME_INTERVAL = 100000  # time interval in seconds
-dt = 5  # time step in seconds
+TIME_INTERVAL = 80  # time interval in seconds
+dt = 0.3  # time step in seconds
 n_time_steps = floor(int(TIME_INTERVAL / dt)) + 1
 
-nx_nodes = 5  # number of x- nodes
-ny_nodes = 5  # number of y- nodes
+nx_nodes = 50  # number of x- nodes
+ny_nodes = 50  # number of y- nodes
 
 dx = W/nx_nodes  # node's control volume width
 dy = H/ny_nodes  # node's control volume height
@@ -111,7 +111,7 @@ def solve():
 
         # SE Edge
         S_u = 2*k*dy*(T_E - T_prev[-1, -1])/dx + \
-            -2*k*dx*(T_prev[-1,  -1] - T_S)/dy
+            2*k*dx*(T_prev[-1,  -1] - T_S)/dy
         T[-1, -1] = (a_W*T_prev[-1, -2] + a_N*T_prev[-2, -1] + (a_Po - (a_W + a_N)) *
                      T_prev[-1, -1] + S_u)/a_P
 
@@ -119,11 +119,11 @@ def solve():
             print(t)
 
 
-def plotheatmap(temp_dist, time):
+def plotheatmap(temp_dist, n):
     # Clear the current plot figure
     plt.clf()
 
-    plt.title(f"Temperature at t = {time:.2f} s")
+    plt.title(f"Temperature at t = {n*dt:.2f} s")
     plt.xlabel("x")
     plt.ylabel("y")
 
@@ -140,7 +140,7 @@ def animate(time):
 solve()
 
 anim = animation.FuncAnimation(
-    plt.figure(), animate, frames=np.arange(0, TIME_INTERVAL + 1, dt), repeat=False)
+    plt.figure(), animate, frames=n_time_steps, repeat=False)
 
 
 plt.show()
