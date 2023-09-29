@@ -101,7 +101,7 @@ class FlatPlateDiffusionSolver:
             T_prev = self.plate.temperature
 
             # Current time temperature nodes
-            T = self.time_temp_dist[t_step]
+            T = self._time_temp_dist[t_step]
 
             # Internal Nodes
             T[1:-1, 1:-1] = (a_E*T_prev[1:-1, 2:] + a_W*T_prev[1:-1, 0:-2] + a_N*T_prev[0:-2, 1:-1] +
@@ -151,28 +151,24 @@ class FlatPlateDiffusionSolver:
             T[-1, -1] = (a_W*T_prev[-1, -2] + a_N*T_prev[-2, -1] + (a_Po - (a_W + a_N)) *
                          T_prev[-1, -1] + S_u)/a_P
 
-            plate.temperature = T
+            self.plate.temperature = T
 
     def plot_heatmap(self, animated=False):
         if animated:
             anim = animation.FuncAnimation(
                 plt.figure(), self._animate, interval=1, frames=solver.n_time_steps, repeat=False)
+            anim.save('anim.gif')
         else:
             self._plot(self._time_temp_dist[-1], self.n_time_steps)
-
-        plt.show()
+            plt.show()
 
     def _animate(self, time):
-        self._plot(self.time_temp_dist[time], time)
+        self._plot(self._time_temp_dist[time], time)
 
     def _plot(self, temp_dist: NDArray[np.float64], n: int):
         plt.clf()
 
         plt.title(f"Temperature at t = {n*self.dt:.2f} s")
-        plt.xlabel("W")
-        plt.ylabel("H")
-        plt.xticks([])
-        plt.yticks([])
 
         plt.pcolormesh(temp_dist, cmap=plt.cm.jet, vmin=0, vmax=200)
         plt.colorbar()
@@ -183,17 +179,52 @@ class FlatPlateDiffusionSolver:
     def time_temp_dist(self):
         return self._time_temp_dist
 
+    @time_temp_dist.setter
+    def time_temp_dist(self, time_temp_dist: NDArray[np.float64]):
+        self._time_temp_dist = time_temp_dist
+
 
 plate = Plate(0.5, 0.5, 8850, 389, 385)
 plate.discretise(100, 100)
 plate.temperature = 200  # initial temperature
+plate2 = plate.copy()
+plate3 = plate.copy()
 
 solver = FlatPlateDiffusionSolver(plate, 0.05, 40)
+solver.set_boundary_condition(
+    east_bc=BoundaryCondition('Dirichlet', 200),
+    west_bc=BoundaryCondition('Dirichlet', 0),
+    north_bc=BoundaryCondition('Dirichlet', 0),
+    south_bc=BoundaryCondition('Dirichlet', 0)
+)
+solver.solve()
+plate_time_temp_dist = solver.time_temp_dist.copy()
+solver.plot_heatmap()
+
+
+solver.plate = plate2
+solver.west_bc = BoundaryCondition('Dirichlet', 200)
+solver.east_bc = BoundaryCondition('Dirichlet', 0)
+solver.solve()
+plate2_time_temp_dist = solver.time_temp_dist.copy()
+solver.plot_heatmap()
+
+# Superposition
+superposition = np.copy(plate_time_temp_dist)
+superposition[:] = superposition[:]
+superposition[:] += plate2_time_temp_dist[:]
+
+solver.time_temp_dist = superposition
+solver.plot_heatmap()
+
+# Combined
 solver.set_boundary_condition(
     east_bc=BoundaryCondition('Dirichlet', 200),
     west_bc=BoundaryCondition('Dirichlet', 200),
     north_bc=BoundaryCondition('Dirichlet', 0),
     south_bc=BoundaryCondition('Dirichlet', 0)
 )
+
+solver.plate = plate3
 solver.solve()
-solver.plot_heatmap()
+solver.plot_heatmap(True)
