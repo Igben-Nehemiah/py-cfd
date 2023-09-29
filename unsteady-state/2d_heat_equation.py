@@ -5,23 +5,23 @@ The west surface is kept at 200°C. Use the explicit finite volume methods to ca
 temperature distribution of the slab at time (i) t = 40 s, (ii) t = 80 s and (iii) t = 120 s. 
 The data are: plate width W = 500 cm, Plate height H = 500 cm, thermal conductivity k = 10 W/m.K and rho = 8850 kg/m3 and c = 389 J/kg/k. 
 """
-from math import floor
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Data
-init_temp = 0
+init_temp = 200
 W = 0.5  # plate's width
 H = 0.5  # plate's height
-k = 398  # plate's thermal conductivity
+k = 385  # plate's thermal conductivity
 rho = 8850  # plate's density in kg/m3
 c = 389  # plate's specific heat capacity in J/kg/k
 
 
 TIME_INTERVAL = 40  # time interval in seconds
 dt = 0.05  # time step in seconds
-n_time_steps = floor(int(TIME_INTERVAL / dt)) + 1
+n_time_steps = int(TIME_INTERVAL / dt) + 1
 
 nx_nodes = 100  # number of x- nodes
 ny_nodes = 100  # number of y- nodes
@@ -35,8 +35,8 @@ time_temp_dist[0] = np.ones((nx_nodes, ny_nodes)) * init_temp
 
 
 # Boundary conditions
-T_W = 200  # plate's western surface temperature
-T_E = 200  # plate's eastern surface temperature
+T_W = 0  # plate's western surface temperature
+T_E = 0  # plate's eastern surface temperature
 T_N = 0  # plate's northern surface temperature
 T_S = 0  # plate's southern surface temperature
 
@@ -145,5 +145,3 @@ anim = animation.FuncAnimation(
 
 
 plt.show()
-# if __name__ == '__main__':
-# pass
