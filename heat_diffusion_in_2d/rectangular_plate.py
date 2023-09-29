@@ -24,6 +24,33 @@ class RectangularPlate:
         - dicretise(nx_nodes, ny_nodes): Discretises the plate into nx_nodes and ny_nodes number of x and y nodes respectively.
         - copy(): Copies plate's properties and returns copied plate.
 
+
+
+
+    Further help
+    ------------
+    The spacial discretisation is given below:
+
+    ```
+                  ╶───╶───╶───╶───╶───
+            . . . │ ● │ ● │ ● │ ● │ ● │ . . . 
+                  ╶───╶───╶───╶───╶───
+                           ...
+
+                            N
+                      ╶───╶───╶───
+                . . . │ W │ P │ E │ . . .
+                      ╶───╶───╶───
+                            S
+
+                           ...
+                  ╶───╶───╶───╶───╶───
+            . . . │ ● │ ● │ ● │ ● │ ● │. . . 
+                  ╶───╶───╶───╶───╶───
+    ```
+
+    Where ● represents the center of the control volume and 'P', the node of interest.
+
     Example
     -------
         >>> plate = RectangularPlate(width=0.5, height=0.5, rho=8850, cp=389, k=385)
