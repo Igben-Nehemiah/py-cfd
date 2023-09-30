@@ -27,8 +27,8 @@ class RectangularPlate:
 
 
 
-    Further help
-    ------------
+    Discretisation
+    --------------
     The spacial discretisation is given below:
 
     ```
