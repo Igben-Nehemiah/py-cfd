@@ -104,10 +104,10 @@ class HeatDiffusionSolver:
             >>> plate.temperature = 200  # Initial condition
 
             >>> # Set boundary conditions
-            >>> west_condition = BoundaryCondition(value=100.0, type='Dirichlet')
-            >>> east_condition = BoundaryCondition(value=50.0, type='Dirichlet')
-            >>> north_condition = BoundaryCondition(value=0.0, type='Dirichlet')
-            >>> south_condition = BoundaryCondition(value=50.0, type='Dirichlet')
+            >>> west_condition = BoundaryCondition(lambda x: 50, type='Dirichlet')
+            >>> east_condition = BoundaryCondition(lambda x: 50, type='Dirichlet')
+            >>> north_condition = BoundaryCondition(lambda x: 0, type='Dirichlet')
+            >>> south_condition = BoundaryCondition(lambda x: 50, type='Dirichlet')
 
             >>> # Initialise Solver
             >>> solver = HeatDiffusionSolver(0.05, 400)
@@ -133,7 +133,13 @@ class HeatDiffusionSolver:
         dx, dy = self.plate.dx, self.plate.dy
         k, cp, rho = self.plate.k, self.plate.cp, self.plate.rho
 
-        T_W, T_E, T_N, T_S = self.west_bc.value, self.east_bc.value, self.north_bc.value, self.south_bc.value
+        w_nodal_points = e_nodal_points = np.arange(
+            dy/2, self.plate.height, dy)
+        n_nodal_points = s_nodal_points = np.arange(
+            dx/2, self.plate.width, dx)
+
+        T_W, T_E, T_N, T_S = self.west_bc.func(w_nodal_points), self.east_bc.func(
+            e_nodal_points), self.north_bc.func(n_nodal_points), self.south_bc.func(s_nodal_points)
 
         aE = aW = k * dy / dx
         aN = aS = k * dx / dy
@@ -156,46 +162,46 @@ class HeatDiffusionSolver:
                              aS*T_prev[2:, 1:-1] + (aPo - (aW + aE + aN + aS))*T_prev[1:-1, 1:-1])/aP
 
             # Western Face
-            S_u = 2*k*dy*(T_W - T_prev[1:-1, 0])/dx
+            S_u = 2*k*dy*(T_W[1:-1] - T_prev[1:-1, 0])/dx
             T[1:-1, 0] = (aE*T_prev[1:-1, 1] + aN*T_prev[0:-2, 0] +
                           aS*T_prev[2:, 0] + (aPo - (aE + aN + aS))*T_prev[1:-1, 0] + S_u)/aP
 
             # Eastern Face
-            S_u = 2*k*dy*(T_E - T_prev[1:-1, -1])/dx
+            S_u = 2*k*dy*(T_E[1:-1] - T_prev[1:-1, -1])/dx
             T[1:-1, -1] = (aW*T_prev[1:-1, -2] + aN*T_prev[0:-2, -1] +
                            aS*T_prev[2:, -1] + (aPo - (aW + aN + aS))*T_prev[1:-1, -1] + S_u)/aP
 
             # Northern Face
-            S_u = 2*k*dx*(T_N - T_prev[0, 1:-1])/dy
+            S_u = 2*k*dx*(T_N[1:-1] - T_prev[0, 1:-1])/dy
             T[0, 1:-1] = (aE*T_prev[0, 2:] + aW*T_prev[0, 0:-2] +
                           aS*T_prev[0, 1:-1] + (aPo - (aE + aW + aS))*T_prev[0, 1:-1] + S_u)/aP
 
             # Southern Face
-            S_u = 2*k*dx*(T_S - T_prev[-1, 1:-1])/dy
+            S_u = 2*k*dx*(T_S[1:-1] - T_prev[-1, 1:-1])/dy
             T[-1, 1:-1] = (aE*T_prev[-1, 2:] + aW*T_prev[-1, 0:-2] +
                            aN*T_prev[-1, 1:-1] + (aPo - (aE + aW + aN))*T_prev[-1, 1:-1] + S_u)/aP
 
             # North-West Corner
-            S_u = 2*k*dy*(T_W - T_prev[0, 0])/dx + \
-                2*k*dx*(T_N - T_prev[0,  0])/dy
+            S_u = 2*k*dy*(T_W[-1] - T_prev[0, 0])/dx + \
+                2*k*dx*(T_N[0] - T_prev[0,  0])/dy
             T[0, 0] = (aE*T_prev[0, 1] + aS*T_prev[1, 0] + (aPo - (aE + aS)) *
                        T_prev[0, 0] + S_u)/aP
 
             # South-West Corner
-            S_u = 2*k*dy*(T_W - T_prev[-1, 0])/dx + \
-                2*k*dx*(T_S - T_prev[-1,  0])/dy
+            S_u = 2*k*dy*(T_W[0] - T_prev[-1, 0])/dx + \
+                2*k*dx*(T_S[0] - T_prev[-1,  0])/dy
             T[-1, 0] = (aE*T_prev[-1, 1] + aN*T_prev[-2, 0] + (aPo - (aE + aN)) *
                         T_prev[-1, 0] + S_u)/aP
 
             # North-East Corner
-            S_u = 2*k*dy*(T_E - T_prev[0, -1])/dx + \
-                2*k*dx*(T_N - T_prev[0,  -1])/dy
+            S_u = 2*k*dy*(T_E[-1] - T_prev[0, -1])/dx + \
+                2*k*dx*(T_N[-1] - T_prev[0,  -1])/dy
             T[0, -1] = (aW*T_prev[0, -2] + aS*T_prev[1, -1] + (aPo - (aW + aS)) *
                         T_prev[0, -1] + S_u)/aP
 
             # South-East Corner
-            S_u = 2*k*dy*(T_E - T_prev[-1, -1])/dx + \
-                2*k*dx*(T_S - T_prev[-1,  -1])/dy
+            S_u = 2*k*dy*(T_E[0] - T_prev[-1, -1])/dx + \
+                2*k*dx*(T_S[-1] - T_prev[-1,  -1])/dy
             T[-1, -1] = (aW*T_prev[-1, -2] + aN*T_prev[-2, -1] + (aPo - (aW + aN)) *
                          T_prev[-1, -1] + S_u)/aP
 
