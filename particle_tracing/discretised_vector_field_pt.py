@@ -19,12 +19,13 @@ x, y = np.meshgrid(np.linspace(0, 1, nx), np.linspace(0, 1, ny))
 
 # Define a random vector field as a numpy array with shape (nx, ny, 2)
 # The shape (nx, ny, 2) represents two components: x and y components of velocity
-vector_field = np.random.rand(nx, ny, 2)
+# vector_field = np.random.rand(nx, ny, 2)
+vector_field = np.load('particle_tracing/velocity_field.npy')
 
 # Normalize the vector field to make it smoother (optional)
 vector_magnitude = np.sqrt(vector_field[:, :, 0]**2 + vector_field[:, :, 1]**2)
-vector_field[:, :, 0] /= vector_magnitude
-vector_field[:, :, 1] /= vector_magnitude
+# vector_field[:, :, 0] /= vector_magnitude
+# vector_field[:, :, 1] /= vector_magnitude
 
 # Initialize particle positions
 num_particles = 10
@@ -32,7 +33,7 @@ num_particles = 10
 initial_positions = np.random.rand(num_particles, 2)
 
 # Parameters
-time_step = 0.1
+time_step = 0.02
 num_steps = 100
 
 # Particle tracing loop
@@ -44,7 +45,7 @@ for _ in range(num_steps):
     # Interpolate vector field values at particle positions
     velocities = interpolate_velocity(current_positions, vector_field)
 
-    # Euler method
+    # Euler's method
     new_positions = current_positions + velocities * time_step
     particle_positions.append(new_positions)
 
