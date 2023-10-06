@@ -4,7 +4,7 @@ from matplotlib.animation import FuncAnimation
 
 
 def calculate_velocity(x, y):
-    vx = y
+    vx = -y
     vy = x
     return vx, vy
 
@@ -22,9 +22,9 @@ velocity_field = np.stack((vx, vy), axis=-1)
 
 
 # Initialise particle positions
-num_particles = 30
+num_particles = 100
 # Random initial positions within [0, 1]
-initial_positions = np.random.uniform(-2, 2, (30, 2))
+initial_positions = np.random.uniform(-2, 2, (num_particles, 2))
 
 # Parameters
 time_step = 0.02
@@ -43,20 +43,29 @@ for _ in range(num_steps):
     new_positions = current_positions + velocities * time_step
     particle_positions.append(new_positions)
 
+grid_options = {
+    'visible': True,
+    'color': 'y',
+    'linestyle': '--',
+    'linewidth': 1
+}
+options = {
+    'color': 'Teal',
+    'scale': 50
+}
 # Extract x and y coordinates for plotting
 x_coords = np.array([pos[:, 0] for pos in particle_positions])
 y_coords = np.array([pos[:, 1] for pos in particle_positions])
 
 fig, ax = plt.subplots(facecolor='k')
 
+ax.set_facecolor('black')
+ax.grid(**grid_options)
 paths = ax.scatter(x_coords[0], y_coords[0])
 ax.set_xlim(-2, 2)
 ax.set_ylim(-2, 2)
 
-options = {
-    'color': 'Teal',
-    'scale': 30
-}
+ax.set_xticks([-2, -1, 0, 1, 2])
 
 ax.quiver(x, y, velocity_field[:, :, 0],
           velocity_field[:, :, 1], **options)
@@ -68,10 +77,11 @@ def update(frame):
               velocity_field[:, :, 1], **options)
     ax.set_xlim(-2, 2)
     ax.set_ylim(-2, 2)
-    ax.scatter(x_coords[frame], y_coords[frame], color=['r'], marker='.')
-    ax.grid(True)
+    ax.scatter(x_coords[frame], y_coords[frame], color=['Teal'], marker='.')
+    ax.grid(**grid_options)
     return paths,
 
 
-anim = FuncAnimation(fig, update, num_steps - 1, interval=1)
+anim = FuncAnimation(fig, update, num_steps - 1,
+                     interval=1, cache_frame_data=False)
 plt.show()
