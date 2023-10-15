@@ -4,9 +4,9 @@ class GridRange:
 
     Parameters
     ----------
-        start (float): The start value of the range.
-        end (float): The end value of the range.
-        n_points (int): The number of points within the range.
+        - start (float): The start value of the range.
+        - end (float): The end value of the range.
+        - n_points (int): The number of points within the range.
 
     Returns
     -------
