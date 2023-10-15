@@ -11,12 +11,13 @@ class VectorField:
 
     Parameters
     ----------
-        grid_ranges (List[GridRange]): A list of GridRange objects defining grid dimensions.
+        - grid_ranges (List[GridRange]): A list of GridRange objects defining grid dimensions.
 
     Attributes
     ----------
-        mesh_positions (List[np.ndarray]): List of grid positions along each dimension.
-        mesh_grids (Tuple[np.ndarray]): Mesh grids created from grid positions.
+        - mesh_positions (List[np.ndarray]): List of grid positions along each dimension.
+        - mesh_grids (Tuple[np.ndarray]): Mesh grids created from grid positions.
+        - grid_ranges (List[GridRange]): A list of GridRange objects defining grid dimensions.
 
     Example
     -------
@@ -37,7 +38,7 @@ class VectorField:
         self.mesh_positions = [np.linspace(*grid_range.as_tuple())
                                for grid_range in grid_ranges]
 
-        self.__grid_ranges = grid_ranges
+        self.grid_ranges = grid_ranges
 
         # Create mesh grids from the grid positions
         self.mesh_grids = np.meshgrid(*self.mesh_positions, indexing='ij')
@@ -52,7 +53,7 @@ class VectorField:
 
         Parameters
         ----------
-            mesh_grids_values (np.ndarray): A collection of mesh grid values for each dimension.
+            - mesh_grids_values (np.ndarray): A collection of mesh grid values for each dimension.
 
         Raises
         ------
@@ -71,7 +72,7 @@ class VectorField:
 
         Parameters
         ----------
-            func (Callable[[Tuple[float, ...]], Tuple[float, ...]): A function that computes vector values.
+            - func (Callable[[Tuple[float, ...]], Tuple[float, ...]): A function that computes vector values.
 
         Raises
         ------
@@ -93,7 +94,7 @@ class VectorField:
 
         Parameters
         ----------
-            positions (Sequence[np.ndarray]): A sequence of NumPy arrays representing positions for which to interpolate vectors.
+            - positions (Sequence[np.ndarray]): A sequence of NumPy arrays representing positions for which to interpolate vectors.
 
         Returns
         -------
