@@ -1,125 +1,174 @@
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.gridspec import GridSpec
-from vector_field import VectorField, GridRange
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import Axes
+from matplotlib.animation import FuncAnimation, FFMpegWriter
+from matplotlib.gridspec import GridSpec
+from matplotlib.quiver import Quiver
+from vector_field import VectorField
+from itertools import cycle
+from typing import Sequence
 
 from particle_advection.trace_method import TraceMethod
 from particle_advection.plot_config import PlotConfig
 from particle_advection.particle_tracer import ParticleTracer
 
 class Plotter:
-    def __init__(self, plot_config: PlotConfig, particle_tracer: ParticleTracer):
+    def __init__(self, plot_config: PlotConfig, particle_tracers: Sequence[ParticleTracer]):
+        """
+        Initialise the Plotter.
+
+        Parameters
+        ----------
+        - plot_config (PlotConfig): The configuration for plotting.
+        - particle_tracers (Sequence[ParticleTracer]): A list of ParticleTracer objects.
+
+        """
         self.cfg = plot_config
-        self.figure = plt.figure(figsize=self.cfg.size)
-        self.p_tracer = particle_tracer
-    
-    def get_axes(self):
-        gs = GridSpec(1,1)
-        return self.figure.add_subplot(gs[0,0])
-    
-    def update_axes(self, axes):
-        title = "Particle Tracing In Vector Field"
-        axes.set_title(title, fontsize=self.cfg.title_size)
+        self.figure = plt.figure(figsize=self.cfg.size, facecolor=self.cfg.bg_color)
+        self.p_tracers = particle_tracers
+        self.__set_axes_array(2, 2)
 
-        axes.set_xlabel('$x$')
-        axes.set_ylabel('$y$')
-        axes.set_aspect('equal')
+    def __set_axes_array(self, n_rows: int, n_cols: int):
+        """
+        Set up an array of axes for subplots.
 
+        Parameters
+        ----------
+        - n_rows (int): Number of rows in the subplot grid.
+        - n_cols (int): Number of columns in the subplot grid.
+
+        """
+        self.__axes_list: list[Axes] = []
+        gs = GridSpec(n_rows,n_cols)
+
+        for row in range(n_rows):
+            for col in range(n_cols):
+                self.__axes_list.append(self.figure.add_subplot(gs[row, col]))
+    
+    def update_axes(self, axes: Axes, title=""):
+        """
+        Update the properties of an axes.
+
+        Parameters
+        ----------
+        - axes (Axes): The axes to be updated.
+        - title (str): Title for the axes.
+
+        Returns
+        -------
+        Axes: The updated axes.
+
+        """
+        axes.set_title(title, fontsize=self.cfg.axes_title_size, color="#fff")
+        axes.set_aspect(self.cfg.aspect_ratio)
+    
         return axes
     
-    def make_background(self, axes):
-        grids_ranges = []
+    def make_quiver(self, field: VectorField, axes: Axes) -> Quiver:
+        """
+        Create a quiver plot on the given axes.
 
-        for grid_range in self.p_tracer.field.grid_ranges:
-            grids_ranges.append(grid_range.start)
-            grids_ranges.append(grid_range.end)
+        Parameters
+        ----------
+        - field (VectorField): The vector field.
+        - axes (Axes): The axes for the quiver plot.
 
+        Returns
+        -------
+        Quiver: The quiver plot.
 
-        return axes.imshow(np.sum(self.p_tracer.field.mesh_grids_values, axis=0), 
-                           extent=grids_ranges)
+        """
+        return axes.quiver(*field.mesh_grids,
+                            *field.mesh_grids_values, 
+                            np.sum(field.mesh_grids_values, axis=0))
     
-    def make_quiver(self, axes):
-        return axes.quiver(*self.p_tracer.field.mesh_grids,
-                            *self.p_tracer.field.mesh_grids_values, 
-                            np.sum(self.p_tracer.field.mesh_grids_values, axis=0))
-    
-    def plot(self, animate=False, show_paths=False):
-        if (self.p_tracer.field.dim != 2):
-            raise ValueError('This can only work for 2D fields for now!')
+    def plot(self, animate=False, show_path_lines: Sequence[bool]=[False], save=False) -> None:
+        """
+        Plot vector fields.
+
+        Parameters
+        ----------
+        - animate (bool): If True, create an animated plot.
+        - show_path_lines (Sequence[bool]): List of booleans to control path lines for each vector field.
+        - save (bool): If True, save the plot.
+
+        """
+        if len(show_path_lines) == 0: show_path_lines = [False]
         
-        if animate:
-            self.__plot_animated(show_paths)
-        else:
-            self.__plot_static()
+        for p_tracer in self.p_tracers:
+            if (p_tracer.field.dim != 2):
+                raise ValueError('This can only work for 2D fields for now!')
 
-    def __plot_animated(self, show_paths=False):
+        if animate:
+            self.__plot_animated(show_path_lines, save)
+        else:
+            self.__plot_static(save)
+
+    def __plot_animated(self, show_path_lines: Sequence[bool], save=False):
+        """
+        Create an animated plot.
+
+        Parameters
+        ----------
+        - show_path_lines (Sequence[bool]): List of booleans to control path lines for each vector field.
+        - save (bool): If True, save the animation.
+        """
         scatter_cfg = {
-            "color": ['y'], 
+            "color": 'y', 
             "marker": ".",
         }
-        xlim = self.p_tracer.field.grid_ranges[0].start, self.p_tracer.field.grid_ranges[0].end
-        ylim = self.p_tracer.field.grid_ranges[1].start, self.p_tracer.field.grid_ranges[1].end
 
-        axes = self.update_axes(self.get_axes())
-        self.make_background(axes)
-        self.make_quiver(axes)
+        xlims = []
+        ylims = []
+        positions_evolutions = []
+        self.figure.suptitle('Vector Fields', fontsize=self.cfg.title_size, color='#fff')
 
-        self.p_tracer.trace(method=TraceMethod.RK4)
-        positions_evolution = self.p_tracer.positions_evolution
+        for pt in self.p_tracers:
+            xlims.append(pt.field.grid_ranges[0].range())
+            ylims.append(pt.field.grid_ranges[1].range())
 
-        paths = axes.scatter(x=positions_evolution[0,:,0], y=positions_evolution[0,:,1], **scatter_cfg)
+            pt.trace(method=TraceMethod.RK4)
+            positions_evolutions.append(pt.positions_evolution)
+        
+        def update(frame: int) -> None:
+            for i, (ax, show_path) in enumerate(zip(self.__axes_list, cycle(show_path_lines))):
+                ax.clear()
+                ax = self.update_axes(ax, self.p_tracers[i].field.desc)
+                ax.set_xlim(*xlims[i])
+                ax.set_ylim(*ylims[i])
+                ax.set_facecolor("k")
+                self.make_quiver(self.p_tracers[i].field, ax)
 
-        def update(frame):
-            axes.clear()
-            axes.set_xlim(*xlim)
-            axes.set_ylim(*ylim)
-            axes.set_facecolor("k")
-            # self.make_background(axes)
-            self.make_quiver(axes)
+                ax.scatter(x=positions_evolutions[i][frame,:,0], y=positions_evolutions[i][frame,:,1], **scatter_cfg)
 
-            axes.scatter(x=positions_evolution[frame,:,0], y=positions_evolution[frame,:,1], **scatter_cfg)
+                if show_path:
+                    ax.plot(positions_evolutions[i][:frame,:,0], 
+                            positions_evolutions[i][:frame,:,1], color='b', alpha=0.85, linestyle="--")
+                  
+                  
 
-            if show_paths:
-                lines = axes.plot(positions_evolution[:frame,:,0], positions_evolution[:frame,:,1], color='b')
-                return paths, lines
-            return paths,
+        writer = FFMpegWriter(fps=5, bitrate=-1)
+        anim = FuncAnimation(self.figure, update, len(positions_evolutions[0]),
+                                interval=1, cache_frame_data=False)
+        if save:
+            anim.save('particle_advection.mp4', writer)
 
-
-        anim = FuncAnimation(self.figure, update, len(positions_evolution),
-                            interval=1, cache_frame_data=False)
         plt.show()
         
 
-    def __plot_static(self):
-        axes = self.update_axes(self.get_axes())
+    def __plot_static(self, save=False):
+        """
+        Create an static plot of vector field(s).
 
-        self.make_background(axes)
-        self.make_quiver(axes)
+        Parameters
+        ----------
+        - save (bool): If True, save plot as png.
+
+        """
+        for i, pt in enumerate(self.p_tracers):
+            axes = self.update_axes(self.__axes_list[i])
+            self.make_quiver(pt.field, axes)
+        
+        if save:
+            self.figure.savefig('fields.png')
         plt.show()
-
-
-
-def run():
-    # Create vector field
-    field = VectorField([GridRange(-5, 5, 30), GridRange(-5, 5, 30)])
-    # field.set_from_function(lambda x, y: (x**2, y**2))
-    # field.set_from_function(lambda x, y: (x, y))
-    # field.set_from_function(lambda x, y: (np.sin(x + y), np.cos(x + y)))
-    # field.set_from_function(lambda x, y: (-y, x))
-    field.set_from_function(lambda x, y: (2*x*y, 1-x**2-y**2))
-
-    # Initialise ParticleTracer with created vector field
-    initial_positions = [(0, 0.5), (0, 0.6), (0, 0.7), (0, 0.8), (0, 0.9), 
-                         (-1, -0.2), (-1, -0.1), (-1, 0), (-1, 0.1), (-1, 0.2),
-                         (-2,4)]
-    tracer = ParticleTracer(field=field, initial_positions=initial_positions, dt=0.05, n_time_steps=200)
-
-    plot_cfg = PlotConfig(size=(10,8),
-        title_size=20,
-        label_size=16)
-    
-    plotter = Plotter(plot_cfg, tracer)
-    plotter.plot(animate=True, show_paths=True)
-
-run()
