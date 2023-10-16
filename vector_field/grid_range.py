@@ -38,3 +38,13 @@ class GridRange:
             tuple[float, float, int]: A tuple representing the grid range.
         """
         return self.start, self.end, self.n_points
+
+    def range(self):
+        """
+        Returns the grid range as a tuple of start and end.
+
+        Returns
+        -------
+            tuple[float, float]: A tuple representing the grid range.
+        """
+        return self.start, self.end
