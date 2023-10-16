@@ -3,6 +3,7 @@ from vector_field import VectorField
 from particle_advection.trace_method import TraceMethod
 
 
+
 class ParticleTracer:
     """
     A utility for tracing the movement of particles through a vector field over time using various numerical integration methods.
