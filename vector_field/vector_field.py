@@ -1,8 +1,9 @@
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator, interpn
+from scipy.interpolate import interpn
 from vector_field.grid_range import GridRange
 from typing import Sequence, Callable
 import inspect
+from copy import deepcopy
 
 
 class VectorField:
@@ -33,12 +34,16 @@ class VectorField:
     ```
     """
 
-    def __init__(self, grid_ranges: list[GridRange]):
+    def __init__(self, grid_ranges: list[GridRange], desc=""):
+        self.set_grid_ranges(grid_ranges)
+        self.desc = desc
+
+    def set_grid_ranges(self, grid_ranges: list[GridRange]):
+        self.grid_ranges = grid_ranges
+
         # Generate grid positions from grid ranges
         self.mesh_positions = [np.linspace(*grid_range.as_tuple())
                                for grid_range in grid_ranges]
-
-        self.grid_ranges = grid_ranges
 
         # Create mesh grids from the grid positions
         self.mesh_grids = np.meshgrid(*self.mesh_positions, indexing='ij')
@@ -46,7 +51,7 @@ class VectorField:
     @property
     def dim(self):
         return len(self.mesh_grids)
-
+    
     def set_grid_values(self, mesh_grids_values: np.ndarray) -> None:
         """
         Set the VectorField's grid values directly from a collection of mesh grid values.
@@ -115,3 +120,13 @@ class VectorField:
 
         # Transpose the result to have one NDArray per position
         return np.array(interpolated_vectors).T
+    
+    def copy(self):
+        """
+        Copies the instance of a VectorField.
+
+        Returns
+        -------
+            VectorField: A deep copy of the instance.
+        """
+        return deepcopy(self)
