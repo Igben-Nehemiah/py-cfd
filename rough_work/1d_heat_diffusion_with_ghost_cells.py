@@ -15,7 +15,7 @@ n_nodes = 5                # Number of control volume cells
 dx = (L/100)*(1/5)         # Cell width in m
 dt = 1                     # Time delta in s
 
-n_time_steps = int(time_interval/dt)
+n_time_steps = int(time_interval/dt )
 
 x_A = 4
 x_B = 1
